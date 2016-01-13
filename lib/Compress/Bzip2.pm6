@@ -4,25 +4,13 @@ use NativeCall;
 
 unit module Compress::Bzip2;
 
-our $null = Pointer[uint32].new(0);
-
-our sub name-to-blob(Str $filename) {
-    my $blob = slurp $filename, :bin;
-    $blob;
-    # my $len = $blob.elems;
-    # my @array;
-    # @array[0] = $blob;
-    # @array[1] = $len;
-    # @array;
-}
-
-our sub handleWriteOpenError(int32 $bzerror, $handle, $blockSize100k) {
+our sub handleWriteOpenError(int32 $bzerror, $handle) {
     given $bzerror {
 	when BZ_CONFIG_ERROR { die "Bzlib2 library has been mis-compiled." }
 	when BZ_PARAM_ERROR {
 	    if ($handle == $null) {
 		die "Filename is incorrect.";
-	    } elsif (($blockSize100k < 1) || ($blockSize100k > 9)) {
+	    } else {
 		die "BlockSize value is incorrect.";
 	    }
 	}
@@ -47,30 +35,25 @@ our sub handleWriteError(int32 $bzerror is rw, $handle, $len) {
 }
 
 our sub handleWriteCloseError(int32 $bzerror is rw) {
-    # We can send null here because closeError
-    # here can be only BZ_SEQUENCE_ERROR or BZ_IO_ERROR.
+    # We can send null and zero here because closeError
+    # can be only BZ_SEQUENCE_ERROR or BZ_IO_ERROR.
     handleWriteError($bzerror, $null, 0);
 }
 
 our sub compress(Str $filename) is export {
     my int32 $bzerror;
-    my int32 $blockSize100k = 6; # Default level of compression.
-    my int32 $verbosity = 1;
-    my int32 $workFactor = 0; # Default case.
-
     my $array = CArray[uint8].new;
-    my $handle = fopen(($filename ~~ m/.+\./) ~ "bz2", "wb");
-    my $bz = BZ2_bzWriteOpen($bzerror, $handle, $blockSize100k, $verbosity, $workFactor);
+    my @data = filename-to-info($filename);
+    my $bz = bzWriteOpen($bzerror, @data[0]);
     if $bzerror != BZ_OK {
-	BZ2_bzWriteClose($bz);
-	handleWriteOpenError($bzerror, $handle, $blockSize100k);
-	close($handle);
+	bzWriteClose($bzerror, $bz);
+	handleWriteOpenError($bzerror, @data[0]);
+	close(@data[0]);
     }
-    my $blob = name-to-blob($filename);
-    my $len = $blob.elems;
-    $array[$_] = $blob[$_] for ^$len;
+    my $len = @data[2];
+    $array[$_] = @data[1][$_] for ^$len;
     BZ2_bzWrite($bzerror, $bz, $array, $len);
     handleWriteError($bzerror, $bz, $len);
-    BZ2_bzWriteClose($bzerror, $bz, 0, $null, $null);
+    bzWriteClose($bzerror, $bz);
     handleWriteCloseError($bzerror);
 }
