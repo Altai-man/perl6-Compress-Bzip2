@@ -83,14 +83,14 @@ our sub compress(Str $filename) is export {
 }
 
 our sub decompress(Str $filename) is export {
-    my @info = name-to-decompress-info($filename);
-    # FD, opened stream.
     my int32 $bzerror = BZ_OK;
+    # FD, opened stream.
+    my @info = name-to-decompress-info($filename);
     my $bz = bzReadOpen($bzerror, @info[0]);
     handleOpenError($bzerror, $bz, @info[0]) if $bzerror != BZ_OK;
+    my buf8 $temp .= new;
+    $temp[1023] = 0; # We will read in chunks of 1024 bytes.
     loop (;$bzerror != BZ_STREAM_END && $bzerror == BZ_OK;) {
-	my $temp = buf8.new;
-	$temp[1023] = 0; # We will read in chunks of 1024 bytes.
 	my $len = BZ2_bzRead($bzerror, $bz, $temp, 1024);
 	handleReadError($bzerror, $bz, @info[0], $len) if $bzerror != BZ_OK;
 	@info[1].write($temp);
