@@ -46,7 +46,6 @@ our class X::Bzip2 is Exception {
 	    }
 	    default {
 		close($!handle);
-		say $!code;
 		"Error during $.action: Something really bad happened with file reading.";
 	    }
 	}
@@ -78,7 +77,9 @@ our sub decompress(Str $filename) is export {
     $temp[1023] = 0; # We will read in chunks of 1024 bytes.
     loop (;$bzerror != BZ_STREAM_END && $bzerror == BZ_OK;) {
 	my $len = BZ2_bzRead($bzerror, $bz, $temp, 1024);
-	@info[1].write($temp);
+	if @info[1] {
+	    @info[1].write($temp);
+	}
     }
     if $bzerror != BZ_OK|BZ_STREAM_END {
 	die X::Bzip2.new('bzRead', $bzerror, @info[0]);
