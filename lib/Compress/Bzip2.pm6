@@ -9,7 +9,8 @@ our class X::Bzip2 is Exception {
     has $.code;
     has $.handle; # FILE* pointer.
 
-    method new ($action, $code, $handle) { self.bless(:$action,:$code,:$handle); }
+    multi method new ($action, $code, $handle) { self.bless(:$action,:$code,:$handle); }
+    multi method new ($action, $code) { self.bless(:$action,:$code); }
 
     method message() {
 	given $!code {
@@ -43,6 +44,9 @@ our class X::Bzip2 is Exception {
 	    when BZ_DATA_ERROR | BZ_DATA_ERROR_MAGIC {
 		close($!handle);
 		"Error during $.action: Data integrity error was detected."
+	    }
+	    when BZ_OUTBUFF_FULL {
+		"Output buffer is definetly smaller than source. Check size of your file or report an error."
 	    }
 	    default {
 		close($!handle);
@@ -88,4 +92,43 @@ our sub decompress(Str $filename) is export {
     die X::Bzip2.new('bzReadClose', $bzerror, @info[0]) if $bzerror != BZ_OK;
     @info[1].close(); # We close file descriptor of perl.
     close(@info[0]); # And we close FILE* of C.
+}
+
+our sub internalBlobToBlob(buf8 $data, $compressing) {
+    my buf8 $temp .= new;
+    my uint32 $len;
+    given $data.elems {
+	when 0..50 {
+	    $len = 1024; # Numbers need check.
+	}
+	default {
+	    $len = $data.elems*2;
+	}
+    }
+    with $len {
+	my Int $temp-len = $len;
+	$temp[$temp-len] = 0;
+	# We'll crop our buffer later.
+	my int32 $ret-code;
+	if $compressing {
+	    $ret-code = BZ2_bzBuffToBuffCompress($temp, $len, $data, $data.elems, 6, 0, 0);
+	} else {
+	    $ret-code = BZ2_bzBuffToBuffDecompress($temp, $len, $data, $data.elems, 0, 0);
+	}
+	if $ret-code == BZ_OK {
+	    # Now $len contain length of compressed buffer and we can return subbuf.
+	    $temp.subbuf(0, $len);
+	} else {
+	    if $compressing { die X::Bzip2.new('bzBuffToBuffCompress', $ret-code); }
+	    else { die X::Bzip2.new('bzBuffToBuffDecompress', $ret-code); }
+	}
+    }
+}
+
+our sub compressToBlob(buf8 $data) is export {
+    internalBlobToBlob($data, True);
+}
+
+our sub decompressToBlob(buf8 $data) is export {
+    internalBlobToBlob($data, False);
 }

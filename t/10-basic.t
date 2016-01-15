@@ -20,4 +20,9 @@ unlink($filename-rel);
 unlink($filename-global ~ ".bz2");
 unlink($filename-rel ~ ".bz2");
 
+my buf8 $buf .= new("Some string".encode);
+my buf8 $result = compressToBlob($buf);
+my $new = decompressToBlob($result).decode;
+is "Some string", $new, "Compression and decompression from buf to buf seems normal!";
+
 done-testing;
