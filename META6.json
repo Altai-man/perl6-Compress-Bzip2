@@ -4,7 +4,7 @@
     "version" : "0.3.0",
     "author" : "github:Altai-man",
     "description" : "High-level bindings to libbzip2",
-    "depends" : [],
+    "depends" : [ "Compress::Bzip2::Raw" ],
     "provides" : {
         "Compress::Bzip2" : "lib/Compress/Bzip2.pm6"
     },
