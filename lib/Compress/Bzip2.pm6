@@ -20,37 +20,37 @@ our class X::Bzip2 is Exception {
 	    }
 	    when BZ_PARAM_ERROR {
 		if ($!handle == $null) {
-		    "Error during $.action: Filename is incorrect.";
+		    "Error during $!action: Filename is incorrect.";
 		} else {
 		    close($!handle);
-		    "Error during $.action: BlockSize value is incorrect or given file is empty.";
+		    "Error during $!action: BlockSize value is incorrect or given file is empty.";
 		}
 	    }
 	    when BZ_IO_ERROR {
-		"Error during $.action: IO error with given filename.";
+		"Error during $!action: IO error with given filename.";
 	    }
 	    when BZ_MEM_ERROR {
 		close($!handle);
-		"Error during $.action: Not enough memory for compression.";
+		"Error during $!action: Not enough memory for compression.";
 	    }
 	    when BZ_SEQUENCE_ERROR {
 		close($!handle);
-		"Error during $.action: Incorrect open function was used."
+		"Error during $!action: Incorrect open function was used."
 	    }
 	    when BZ_UNEXPECTED_EOF {
 		close($!handle);
-		"Error during $.action: File is unfinished."
+		"Error during $!action: File is unfinished."
 	    }
 	    when BZ_DATA_ERROR | BZ_DATA_ERROR_MAGIC {
 		close($!handle);
-		"Error during $.action: Data integrity error was detected."
+		"Error during $!action: Data integrity error was detected."
 	    }
 	    when BZ_OUTBUFF_FULL {
 		"Output buffer is definetly smaller than source. Check size of your file or report an error."
 	    }
 	    default {
 		close($!handle);
-		"Error during $.action: Something really bad happened with file reading.";
+		"Error during $!action: Something really bad happened with file reading.";
 	    }
 	}
     }
@@ -74,6 +74,9 @@ our sub compress(Str $filename) is export {
 our sub decompress(Str $filename) is export {
     my int32 $bzerror = BZ_OK;
     # FD, opened stream.
+    if !$filename.ends-with(".bz2") {
+	die X::Bzip2.new('bzReadOpen', BZ_DATA_ERROR); # We don't need to write something if file is broken.
+    } # Not sure about usefulness of decompression for files without .bz2 extension.
     my @info = name-to-decompress-info($filename);
     my $bz = bzReadOpen($bzerror, @info[0]);
     die X::Bzip2.new('bzReadOpen', $bzerror, @info[0]) if $bzerror != BZ_OK;
@@ -81,9 +84,7 @@ our sub decompress(Str $filename) is export {
     $temp[1023] = 0; # We will read in chunks of 1024 bytes.
     loop (;$bzerror != BZ_STREAM_END && $bzerror == BZ_OK;) {
 	my $len = BZ2_bzRead($bzerror, $bz, $temp, 1024);
-	if @info[1] {
-	    @info[1].write($temp);
-	}
+	@info[1].write($temp);
     }
     if $bzerror != BZ_OK|BZ_STREAM_END {
 	die X::Bzip2.new('bzRead', $bzerror, @info[0]);

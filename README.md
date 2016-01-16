@@ -19,6 +19,5 @@ my Str $result = decompressToBlob($compressed-data).decode;
 TODO
 ====================
 
-* Debug 'False' issue.
 * Docs.
 * OO-interface.
