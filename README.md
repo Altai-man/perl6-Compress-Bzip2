@@ -16,8 +16,26 @@ my buf8 $result = compressToBlob($data); # Data should be encoded.
 my Str $result = decompressToBlob($compressed-data).decode;
 ```
 
+Also, now we support streaming:
+
+```perl6
+my $compressor = Compress::Bzip2::Stream.new;
+loop {
+     $socket.write($compressor.compress($data-chunk));
+}
+$socket.write($compressor.finish);
+
+my $dcompressor = Compress::Bzip2::Stream.new;
+while !$dcompressor.finished {
+      my $data-chunk = $dcompressor.decompress($socked.read($size));
+}
+```
+
+Your any suggestions, reporting of issues and advices about design of library will be really helpful.
+
+I'm very grateful to authors of perl6 bindings to zlib compression library, since I took their code as example for this work and wrote very similar interface.
+
 TODO
 ====================
 
 * Docs.
-* OO-interface.

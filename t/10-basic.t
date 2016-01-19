@@ -25,4 +25,22 @@ my buf8 $result = compressToBlob($buf);
 my $new = decompressToBlob($result).decode;
 is "Some string", $new, "Compression and decompression from buf to buf seems normal!";
 
+# Stream compression(will work with stdio, sockets, etc.);
+my $cstream = Compress::Bzip2::Stream.new;
+my $filename = "/tmp/streamed.bz2";
+my $test-string = "Some test string.".encode;
+my $buffer = buf8.new;
+$buffer ~= $cstream.compress($test-string);
+$buffer ~= $cstream.finish();
+my $fd = open $filename, :w, :bin;
+$fd.write($buffer);
+$fd.close();
+
+my $dstream = Compress::Bzip2::Stream.new;
+$buffer = buf8.new;
+my $data = slurp($filename, :bin);
+$buffer ~= $dstream.decompress($data);
+is $buffer.decode, "Some test string.", "Streaming decoding is good.";
+unlink($filename);
+
 done-testing;

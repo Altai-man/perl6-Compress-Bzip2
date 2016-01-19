@@ -56,6 +56,7 @@ our class X::Bzip2 is Exception {
     }
 }
 
+# Procedural interface.
 our sub compress(Str $filename) is export {
     my int32 $bzerror;
     # FD, Blob, Size.
@@ -132,4 +133,86 @@ our sub compressToBlob(buf8 $data) is export {
 
 our sub decompressToBlob(buf8 $data) is export {
     internalBlobToBlob($data, False);
+}
+
+# OO-interface.
+class Compress::Bzip2::Stream is export {
+    has $!stream = False;
+    has Bool $!compress-init = False;
+    has Bool $!decompress-init = False;
+    has Bool $!finished = False;
+    has Int  $.bytes-left = 0;
+    has int32 $bzret;
+
+    method compress($data) {
+	die "Cannot compress and decompress the same object!" if $!decompress-init;
+	$!compress-init = True;
+	self._internal($data, True);
+    }
+
+    method decompress($data) {
+	die "Cannot compress and decompress the same object!" if $!compress-init;
+	$!decompress-init = True;
+	self._internal($data, False);
+    }
+
+    method _internal($data, $compression) {
+	die "End of stream reached!" if $!finished;
+	$!stream = self.return_stream();
+	$!stream.set-input($data);
+	my buf8 $buffer-to-return .= new;
+	my buf8 $out .= new;
+	repeat {
+	    $out = buf8.new;
+	    $out[1023] = 0;
+	    $!stream.set-output($out);
+	    if $compression {
+		$!bzret = BZ2_bzCompress($!stream, ($!stream.avail-in) ?? BZ_RUN !! BZ_FLUSH);
+	    } else {
+		$!bzret = BZ2_bzDecompress($!stream);
+	    }
+	    $out = $out.subbuf(0, 1024-($!stream.avail-out));
+	    $buffer-to-return ~= $out;
+	} while ($!stream.avail-in);
+	if $!bzret == BZ_STREAM_END {
+	    $!bytes-left = $!stream.avail-in;
+	    $!finished = True;
+	    $!stream = False;
+	    return $buffer-to-return;
+	}
+	if $!bzret != BZ_RUN|BZ_FLUSH {
+	    die "$!bzret";
+	}
+	$buffer-to-return;
+    }
+
+    method finish() {
+	my $out = buf8.new;
+	$out[1023] = 0;
+	my $returned = buf8.new;
+	repeat {
+	    $!stream.set-output($out);
+	    $!bzret = BZ2_bzCompress($!stream, BZ_FINISH);
+	    $out = $out.subbuf(0, 1024-$!stream.avail-out);
+	    $returned ~= $out;
+	} while ($!bzret != BZ_STREAM_END);
+	BZ2_bzCompressEnd($!stream);
+	$!bytes-left = $!stream.avail-in;
+	$!stream = False;
+	$!finished = True;
+	$returned;
+    }
+
+    method return_stream() {
+	unless $!stream {
+	    $!stream = bz_stream.new;
+	    if $!compress-init {
+		BZ2_bzCompressInit($!stream, 9, 0, 0);
+	    }
+	    if $!decompress-init {
+		BZ2_bzDecompressInit($!stream, 0, 0);
+	    }
+	}
+	$!stream;
+    }
 }
