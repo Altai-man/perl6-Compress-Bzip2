@@ -15,14 +15,14 @@ our class X::Bzip2 is Exception {
     method message() {
 	given $!code {
 	    when BZ_CONFIG_ERROR {
-		close($!handle);
+		fclose($!handle);
 		"Error during $.action: Bzlib2 library was mis-compiled.";
 	    }
 	    when BZ_PARAM_ERROR {
 		if ($!handle == Pointer[uint32]) {
 		    "Error during $!action: Filename is incorrect.";
 		} else {
-		    close($!handle);
+		    fclose($!handle);
 		    "Error during $!action: BlockSize value is incorrect or given file is empty.";
 		}
 	    }
@@ -30,26 +30,26 @@ our class X::Bzip2 is Exception {
 		"Error during $!action: IO error with given filename.";
 	    }
 	    when BZ_MEM_ERROR {
-		close($!handle);
+		fclose($!handle);
 		"Error during $!action: Not enough memory for compression.";
 	    }
 	    when BZ_SEQUENCE_ERROR {
-		close($!handle);
+		fclose($!handle);
 		"Error during $!action: Incorrect open function was used."
 	    }
 	    when BZ_UNEXPECTED_EOF {
-		close($!handle);
+		fclose($!handle);
 		"Error during $!action: File is unfinished."
 	    }
 	    when BZ_DATA_ERROR | BZ_DATA_ERROR_MAGIC {
-		close($!handle);
+		fclose($!handle);
 		"Error during $!action: Data integrity error was detected."
 	    }
 	    when BZ_OUTBUFF_FULL {
 		"Output buffer is definetly smaller than source. Check size of your file or report an error."
 	    }
 	    default {
-		close($!handle);
+		fclose($!handle);
 		"Error during $!action: Something really bad happened with file reading.";
 	    }
 	}
@@ -69,7 +69,7 @@ our sub compress(Str $filename) is export {
     die X::Bzip2.new('bzWrite', $bzerror, @info[0]) if $bzerror != BZ_OK;
     bzWriteClose($bzerror, $bz);
     die X::Bzip2.new('bzWriteClose', $bzerror, @info[0]) if $bzerror != BZ_OK;
-    close(@info[0]);
+    fclose(@info[0]);
 }
 
 our sub decompress(Str $filename) is export {
@@ -93,7 +93,7 @@ our sub decompress(Str $filename) is export {
     BZ2_bzReadClose($bzerror, $bz);
     die X::Bzip2.new('bzReadClose', $bzerror, @info[0]) if $bzerror != BZ_OK;
     @info[1].close(); # We close file descriptor of perl.
-    close(@info[0]); # And we close FILE* of C.
+    fclose(@info[0]); # And we close FILE* of C.
 }
 
 our sub internalBlobToBlob(buf8 $data, $compressing) {
