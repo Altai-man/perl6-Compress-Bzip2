@@ -4,7 +4,7 @@
     "license" : "Artistic-2.0",
     "tags": ["Compression"],
     "version" : "0.4.1",
-    "author" : "github:Altai-man",
+    "auth" : "zef:Altai-man",
     "description" : "High-level bindings to libbzip2",
     "depends" : [ "Compress::Bzip2::Raw" ],
     "provides" : {
