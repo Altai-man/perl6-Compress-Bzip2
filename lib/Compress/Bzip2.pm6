@@ -57,7 +57,7 @@ our class X::Bzip2 is Exception {
 }
 
 # Procedural interface.
-our sub compress(Str $filename) is export {
+our sub compress(Str() $filename) is export {
     my int32 $bzerror;
     # FD, Blob, Size.
     my @info = name-to-compress-info($filename);
@@ -72,7 +72,7 @@ our sub compress(Str $filename) is export {
     fclose(@info[0]);
 }
 
-our sub decompress(Str $filename) is export {
+our sub decompress(Str() $filename) is export {
     my int32 $bzerror = BZ_OK;
     # FD, opened stream.
     if !$filename.ends-with(".bz2") {
