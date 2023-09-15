@@ -37,7 +37,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          zef install --/test --deps-only --build-depends --test-depends .
+          # zef install --/test --deps-only --build-depends --test-depends .
+          zef install -v https://github.com/Altai-man/perl6-Compress-Bzip2-Raw.git
 
       - name: Run Tests
         run: |
