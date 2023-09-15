@@ -4,10 +4,10 @@ use Compress::Bzip2;
 plan *;
 
 my $test = roll 100, "a" .. "z";
-my Str $filename-global = "/tmp/test.txt";
-my Str $filename-rel = "./test.txt";
+my IO::Path $filename-global = $*TMPDIR.add: "raku-compress-bzip2-test.txt"; # replace this with a temp file creator
+my IO::Path $filename-rel = $*CWD.add: "test.txt";
 
-lives-ok { spurt $filename-global, $test }, "Glogal file was written.";
+lives-ok { spurt $filename-global, $test }, "Global file was written.";
 lives-ok { spurt $filename-rel, $test }, "Relative file was written.";
 lives-ok { compress($filename-global) }, "Compression was done.";
 lives-ok { compress($filename-rel) }, "Compression was done.";
@@ -27,7 +27,7 @@ is "Some string", $new, "Compression and decompression from buf to buf seems nor
 
 # Stream compression(will work with stdio, sockets, etc.);
 my $cstream = Compress::Bzip2::Stream.new;
-my $filename = "/tmp/streamed.bz2";
+my $filename = $*CWD.add: "/streamed.bz2";
 my $test-string = "Some test string.".encode;
 my $buffer = buf8.new;
 $buffer ~= $cstream.compress($test-string);
