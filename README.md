@@ -1,4 +1,5 @@
-perl6-Compress-Bzip2  [![Build Status](https://travis-ci.org/Altai-man/perl6-Compress-Bzip2.svg?branch=master)](https://travis-ci.org/Altai-man/perl6-Compress-Bzip2)
+perl6-Compress-Bzip2
+[![Linux](https://github.com/pmqs/perl6-Compress-Bzip2/actions/workflows/linux.yml/badge.svg)](https://github.com/pmqs/perl6-Compress-Bzip2/actions/workflows/linux.yml) [![MacOS](https://github.com/pmqs/perl6-Compress-Bzip2/actions/workflows/macos.yml/badge.svg)](https://github.com/pmqs/perl6-Compress-Bzip2/actions/workflows/macos.yml) [![Windows](https://github.com/pmqs/perl6-Compress-Bzip2/actions/workflows/windows.yml/badge.svg)](https://github.com/pmqs/perl6-Compress-Bzip2/actions/workflows/windows.yml)
 ====================
 
 Bindings to bzip2 library. Procedural API is as easy as pie: you can compress and decompress your files like this:
